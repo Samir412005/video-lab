@@ -1,0 +1,52 @@
+name: Video Lab Manim + Whisper Test
+
+# Second toolchain test: Manim motion graphics (code-driven) + faster-whisper
+# subtitles (local speech-to-text) + FFmpeg subtitle burn-in, all on the free
+# GitHub runner. Trigger manually from the Actions tab ("Run workflow").
+
+on:
+  workflow_dispatch:
+
+jobs:
+  render:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install system tools
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y ffmpeg espeak-ng libcairo2-dev libpango1.0-dev pkg-config
+
+      - name: Install Python tools
+        run: |
+          pip install --quiet manim faster-whisper
+
+      - name: Render Manim scene
+        run: |
+          manim render -qm --format=mp4 scripts/manim_test.py VideoLabIntro
+
+      - name: Make test voiceover (espeak)
+        run: |
+          espeak-ng -v en "Welcome to Video Lab. Professional video, made in the cloud." -w voice.wav
+
+      - name: Transcribe to subtitles (faster-whisper)
+        run: |
+          python3 scripts/transcribe.py voice.wav subs.srt
+
+      - name: Combine video + voice + burnt-in subtitles
+        run: |
+          mkdir -p out
+          ffmpeg -y -i media/videos/manim_test/720p30/VideoLabIntro.mp4 -i voice.wav -vf "subtitles=subs.srt:force_style='Fontsize=28,PrimaryColour=&HFFFFFF&,OutlineColour=&H000000&'" -c:v libx264 -preset medium -crf 20 -pix_fmt yuv420p -c:a aac -b:a 128k -shortest -movflags +faststart out/video-lab-manim.mp4
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        with:
+          name: video-lab-manim-whisper
+          path: |
+            out/video-lab-manim.mp4
+            subs.srt
+          if-no-files-found: error
+          retention-days: 30
