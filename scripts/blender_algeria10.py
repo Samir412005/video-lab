@@ -56,9 +56,9 @@ mat.node_tree.links.new(tex.outputs['Color'], bsdf.inputs['Base Color'])
 flag.data.materials.append(mat)
 
 wave = flag.modifiers.new(name='Wave', type='WAVE')
-wave.wave_height = 0.08
-wave.wave_width = 1.2
-wave.wave_speed = 0.5
+wave.height = 0.08
+wave.width = 1.2
+wave.speed = 0.5
 wave.lifetime = 0
 
 bpy.ops.object.camera_add(location=(0, -5.5, 1.6))
