@@ -79,7 +79,7 @@ jobs:
       - name: Final assembly + grade + burnt-in subtitles
         run: |
           mkdir -p out
-          ffmpeg -y -i video_novoice.mp4 -i mixed.wav -vf "eq=contrast=1.05:saturation=1.12,subtitles=subs.srt:force_style='Fontsize=28,PrimaryColour=&HFFFFFF&,OutlineColour=&H000000&'" -c:v libx264 -preset medium -crf 20 -pix_fmt yuv420p -c:a aac -b:a 128k -shortest -movflags +faststart out/algeria10.mp4
+          ffmpeg -y -i video_novoice.mp4 -i mixed.wav -vf "eq=contrast=1.05:saturation=1.12,lut3d=file=assets/luts/slay-04-film.cube,subtitles=subs.srt:force_style='Fontsize=28,PrimaryColour=&HFFFFFF&,OutlineColour=&H000000&'" -c:v libx264 -preset medium -crf 20 -pix_fmt yuv420p -c:a aac -b:a 128k -shortest -movflags +faststart out/algeria10.mp4
 
       - name: Upload results
         uses: actions/upload-artifact@v4
