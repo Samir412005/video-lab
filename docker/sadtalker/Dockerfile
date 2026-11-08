@@ -27,11 +27,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 # Torch CPU (no CUDA needed for a short test clip; much smaller than CUDA).
+# PINNED to the SadTalker-era trio torch 2.1.2 / torchvision 0.16.2 /
+# torchaudio 2.1.2 — do NOT let pip resolve latest. basicsr 1.4.2 does
+# `from torchvision.transforms.functional_tensor import rgb_to_grayscale`,
+# and that module was REMOVED in torchvision 0.17 (verified: present in
+# 0.16.2, 404 in 0.17.0+), so any newer torchvision dies at import time.
 # The PyTorch CPU index does NOT host build tools like flit_core, and pip
 # builds typing_extensions from source (its wheel is discarded over a
 # metadata-name mismatch) — without a PyPI fallback the build dies with
 # "No matching distribution found for flit_core". The extra index fixes it.
-RUN pip install --no-cache-dir torch torchvision torchaudio \
+RUN pip install --no-cache-dir torch==2.1.2+cpu torchvision==0.16.2+cpu torchaudio==2.1.2+cpu \
     --index-url https://download.pytorch.org/whl/cpu \
     --extra-index-url https://pypi.org/simple
 
