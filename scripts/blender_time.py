@@ -62,18 +62,18 @@ for i in range(6):
     cube.rotation_euler = (0, 0, 0)
     cube.keyframe_insert(data_path='rotation_euler', frame=90 + i * 8)
 
-bpy.ops.object.camera_add(location=(-6, -8, 4))
+bpy.ops.object.camera_add(location=(-8, -11, 5.5))
 cam = bpy.context.active_object
 scene.camera = cam
 empty = bpy.data.objects.new('Target', None)
 scene.collection.objects.link(empty)
-empty.location = (0, 0, 2.0)
+empty.location = (0, 0, 2.5)
 track = cam.constraints.new(type='TRACK_TO')
 track.target = empty
 track.track_axis = 'TRACK_NEGATIVE_Z'
 track.up_axis = 'UP_Y'
 cam.keyframe_insert(data_path='location', frame=1)
-cam.location = (-3.5, -6.5, 3.2)
+cam.location = (-5, -8, 4.2)
 cam.keyframe_insert(data_path='location', frame=150)
 
 print('RENDER DONE')

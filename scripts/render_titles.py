@@ -29,7 +29,7 @@ titles = [
     ("title1.png", "الوقت يمضي", 110, (255, 215, 0)),
     ("title2.png", "نبني في كل لحظة", 100, (255, 215, 0)),
     ("title3.png", "نتعلم، ننمو، نترك أثرًا", 88, (255, 255, 255)),
-    ("title4.png", "الوقت لا يعود... فاجعله يستحق", 78, (255, 215, 0)),
+    ("title4.png", "الوقت لا يعود، فاجعله يستحق", 78, (255, 215, 0)),
 ]
 for name, text, size, color in titles:
     font = ImageFont.truetype(font_path, size)

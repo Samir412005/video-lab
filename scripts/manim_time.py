@@ -23,8 +23,8 @@ class TimeBuild(Scene):
         bars = VGroup(*[
             Rectangle(width=0.9, height=h, fill_color=c, fill_opacity=0.9, stroke_width=0)
             for h, c in [(1.2, BLUE), (2.0, TEAL), (2.8, GREEN), (2.2, GOLD), (3.2, ORANGE)]
-        ]).arrange(RIGHT, buff=0.3).to_edge(DOWN, buff=0.5)
-        sun = Circle(radius=0.7, color=GOLD, fill_opacity=1, stroke_width=0).to_edge(UP, buff=1.5)
+        ]).arrange(RIGHT, buff=0.3).to_edge(DOWN, buff=1.2)
+        sun = Circle(radius=0.7, color=GOLD, fill_opacity=1, stroke_width=0).to_edge(UP, buff=1.5).to_edge(RIGHT, buff=1.0)
         self.play(FadeIn(title), run_time=1)
         self.play(LaggedStart(*[GrowFromEdge(b, DOWN) for b in bars], lag_ratio=0.25, run_time=8))
         self.play(GrowFromCenter(sun), run_time=3)
