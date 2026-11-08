@@ -15,6 +15,10 @@ scene = bpy.context.scene
 scene.render.engine = 'CYCLES'
 scene.cycles.device = 'CPU'
 scene.cycles.samples = 24
+# Ubuntu's apt Blender (4.0.2) is built WITHOUT OpenImageDenoiser, so Cycles'
+# default denoising aborts the render ("Build without OpenImageDenoiser").
+# Denoising off: the test scene renders fine without it.
+scene.cycles.use_denoising = False
 scene.render.resolution_x = 1280
 scene.render.resolution_y = 720
 scene.render.fps = 24
