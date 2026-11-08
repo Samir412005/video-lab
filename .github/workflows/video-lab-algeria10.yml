@@ -1,0 +1,89 @@
+name: Video Lab Algeria 10s
+
+# 10 s video about Algeria, using the video-lab techniques:
+# Blender 3D waving flag + real CC0 photo (Openverse) with Ken Burns +
+# Manim closing title + Piper Arabic voiceover + faster-whisper Arabic
+# subtitles + FFmpeg assembly/grade.
+# Trigger manually from the Actions tab ("Run workflow").
+
+on:
+  workflow_dispatch:
+
+jobs:
+  render:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install system tools
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y ffmpeg blender espeak-ng libcairo2-dev libpango1.0-dev pkg-config fonts-noto-core fontconfig
+
+      - name: Install Python tools
+        run: |
+          pip install --quiet manim faster-whisper piper-tts pillow
+
+      - name: Check Arabic font + shaping
+        run: |
+          fc-list :lang=ar | head -5
+          python3 -c "from PIL import features; print('raqm:', features.check('raqm')); assert features.check('raqm')"
+
+      - name: Render Arabic titles
+        run: python3 scripts/render_titles10.py
+
+      - name: Render Blender flag (3D)
+        run: |
+          mkdir -p render
+          blender -b --python scripts/blender_algeria10.py
+
+      - name: Assemble Blender opener
+        run: |
+          ffmpeg -y -v error -framerate 30 -i render/frame_%04d.png -c:v libx264 -preset medium -crf 20 -pix_fmt yuv420p -r 30 seg_blender.mp4
+
+      - name: Render Manim closing title
+        run: |
+          manim render -qm --format=mp4 scripts/manim_algeria10.py AlgeriaTitle
+
+      - name: Photo segment (Ken Burns + blur fill)
+        run: |
+          ffmpeg -y -v error -framerate 30 -loop 1 -t 5 -i assets/algeria-fort.jpg -framerate 30 -loop 1 -t 5 -i assets/algeria-fort.jpg -filter_complex "[0:v]scale=1280:720:force_original_aspect_ratio=increase,crop=1280:720,gblur=sigma=25,eq=brightness=-0.2[bg];[1:v]scale=1000:854,zoompan=z='1+0.1*on/150':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s=845:720:fps=30[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2,format=yuv420p" -c:v libx264 -preset medium -crf 20 -pix_fmt yuv420p -r 30 seg_photo.mp4
+
+      - name: Download Arabic voice (Piper kareem)
+        run: |
+          curl -sSL -o kareem.onnx https://huggingface.co/rhasspy/piper-voices/resolve/main/ar/ar_JO/kareem/medium/ar_JO-kareem-medium.onnx
+          curl -sSL -o kareem.onnx.json https://huggingface.co/rhasspy/piper-voices/resolve/main/ar/ar_JO/kareem/medium/ar_JO-kareem-medium.onnx.json
+          ls -la kareem.onnx*
+
+      - name: Make Arabic voiceover
+        run: python3 scripts/make_vo10.py
+
+      - name: Concatenate video segments
+        run: |
+          printf "file 'seg_blender.mp4'\nfile 'seg_photo.mp4'\nfile 'media/videos/manim_algeria10/720p30/AlgeriaTitle.mp4'\n" > concat.txt
+          ffmpeg -y -v error -f concat -safe 0 -i concat.txt -c:v libx264 -preset medium -crf 20 -pix_fmt yuv420p -r 30 video_novoice.mp4
+          ffprobe -v error -show_entries format=duration -of csv=p=0 video_novoice.mp4
+
+      - name: Mix voiceover + soft pad
+        run: |
+          ffmpeg -y -v error -i vo1.wav -f lavfi -i "sine=frequency=220:duration=10" -f lavfi -i "sine=frequency=330:duration=10" -filter_complex "[0:a]adelay=3000[v1];[1:a]volume=0.03[p1];[2:a]volume=0.02[p2];[v1][p1][p2]amix=inputs=3:duration=longest" -c:a pcm_s16le mixed.wav
+
+      - name: Transcribe to subtitles (faster-whisper, Arabic)
+        run: python3 scripts/transcribe.py mixed.wav subs.srt ar
+
+      - name: Final assembly + grade + burnt-in subtitles
+        run: |
+          mkdir -p out
+          ffmpeg -y -i video_novoice.mp4 -i mixed.wav -vf "eq=contrast=1.05:saturation=1.12,subtitles=subs.srt:force_style='Fontsize=28,PrimaryColour=&HFFFFFF&,OutlineColour=&H000000&'" -c:v libx264 -preset medium -crf 20 -pix_fmt yuv420p -c:a aac -b:a 128k -shortest -movflags +faststart out/algeria10.mp4
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        with:
+          name: video-lab-algeria10
+          path: |
+            out/algeria10.mp4
+            subs.srt
+          if-no-files-found: error
+          retention-days: 30
