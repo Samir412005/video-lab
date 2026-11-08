@@ -1,0 +1,71 @@
+name: SadTalker talking head (Docker, pinned Python 3.10)
+
+# Radical fix for the Colab failures: SadTalker runs in a pinned
+# Python 3.10 Docker image (original pins, CPU torch) on the free
+# Actions runner — no Colab, no GPU queue, no manual notebook.
+# Trigger manually; the MP4 lands as the `video-lab-sadtalker` artifact.
+on:
+  workflow_dispatch:
+    inputs:
+      portrait:
+        description: "Portrait image in the repo (SadTalker input)"
+        required: true
+        default: "assets/portrait.jpg"
+      audio:
+        description: "Voiceover WAV in the repo (SadTalker input)"
+        required: true
+        default: "assets/vo_test.wav"
+      enhancer:
+        description: "Face enhancer (gfpgan, or 'none' for speed)"
+        required: false
+        default: "gfpgan"
+
+jobs:
+  sadtalker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build SadTalker image (pinned Python 3.10)
+        uses: docker/build-push-action@v6
+        with:
+          context: docker/sadtalker
+          tags: sadtalker:test
+          load: true
+
+      - name: Generate talking head (CPU)
+        run: |
+          mkdir -p out
+          ENHANCER=""
+          if [ "${{ inputs.enhancer }}" != "none" ]; then
+            ENHANCER="--enhancer ${{ inputs.enhancer }}"
+          fi
+          docker run --rm -v "$PWD:/work" -w /app sadtalker:test \
+            inference.py \
+            --driven_audio "/work/${{ inputs.audio }}" \
+            --source_image "/work/${{ inputs.portrait }}" \
+            --result_dir /work/out \
+            --still --preprocess full $ENHANCER --size 512
+          echo "=== results ==="
+          ls -la out/
+          test -n "$(ls out/*.mp4 2>/dev/null)" || (echo "ERROR: no MP4 produced" && exit 1)
+
+      - name: Verify output
+        run: |
+          MP4=$(ls out/*.mp4 | head -1)
+          echo "MP4: $MP4"
+          ffprobe -v error -show_entries format=duration,size \
+            -show_entries stream=codec_name,width,height,r_frame_rate \
+            -of default=noprint_wrappers=1 "$MP4"
+
+      - name: Upload talking-head video
+        uses: actions/upload-artifact@v4
+        with:
+          name: video-lab-sadtalker
+          path: out/*.mp4
+          retention-days: 7
