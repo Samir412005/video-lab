@@ -1,0 +1,39 @@
+name: Video Lab Test Pipeline
+
+# Proof-of-concept for the cloud video toolchain: Blender headless render
+# (Cycles CPU) + FFmpeg pro pipeline (grade, audio, Android-compatible MP4)
+# on a free GitHub-hosted runner (ubuntu-24.04, 4 vCPU, 16 GB RAM, no GPU).
+# Trigger: manually, from the repository's Actions tab ("Run workflow").
+
+on:
+  workflow_dispatch:
+
+jobs:
+  render:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install tools
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y ffmpeg blender
+
+      - name: Render Blender test scene (Cycles CPU)
+        run: |
+          mkdir -p render out
+          blender -b --python scripts/test_scene.py
+
+      - name: Assemble and grade with FFmpeg
+        run: |
+          ffmpeg -y -framerate 24 -i render/frame_%04d.png -f lavfi -i "sine=frequency=440:duration=4" -vf "eq=contrast=1.08:saturation=1.15,format=yuv420p" -c:v libx264 -preset medium -crf 20 -r 24 -c:a aac -b:a 128k -shortest -movflags +faststart out/video-lab-test.mp4
+
+      - name: Upload MP4
+        uses: actions/upload-artifact@v4
+        with:
+          name: video-lab-test
+          path: out/video-lab-test.mp4
+          if-no-files-found: error
+          retention-days: 30
