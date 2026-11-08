@@ -11,6 +11,7 @@ def fmt(t):
     return f"{h:02d}:{m:02d}:{s:02d},{ms:03d}"
 
 audio, out = sys.argv[1], sys.argv[2]
+lang = sys.argv[3] if len(sys.argv) > 3 else "en"
 # Decode with FFmpeg to 16 kHz mono float32 raw PCM first.
 # (faster-whisper's own decoder uses PyAV, whose `metadata_errors`
 # argument breaks with the av version pip installs on the runner,
@@ -22,7 +23,7 @@ subprocess.run(
 )
 pcm = np.fromfile("voice.raw", dtype=np.float32)
 model = WhisperModel("base", device="cpu", compute_type="int8")
-segments, info = model.transcribe(pcm, language="en")
+segments, info = model.transcribe(pcm, language=lang)
 with open(out, "w", encoding="utf-8") as f:
     for i, seg in enumerate(segments, 1):
         f.write(f"{i}\n{fmt(seg.start)} --> {fmt(seg.end)}\n{seg.text.strip()}\n\n")
