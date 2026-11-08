@@ -52,7 +52,7 @@ jobs:
 
       - name: Photo segment (Martyrs -> dunes, crossfade)
         run: |
-          ffmpeg -y -v error -framerate 30 -loop 1 -t 3 -i assets/algeria-martyrs.jpg -framerate 30 -loop 1 -t 3 -i assets/algeria-dunes.jpg -filter_complex "[0:v]scale=2560:1440:force_original_aspect_ratio=increase,crop=2560:1440,zoompan=z='1+0.08*on/90':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s=1280:720:fps=30[p1];[1:v]scale=2560:1440:force_original_aspect_ratio=increase,crop=2560:1440,zoompan=z='1+0.08*on/90':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s=1280:720:fps=30[p2];[p1][p2]xfade=transition=fade:duration=1:offset=2" -c:v libx264 -preset medium -crf 20 -pix_fmt yuv420p -r 30 seg_photo.mp4
+          ffmpeg -y -v error -framerate 30 -loop 1 -t 3 -i assets/algeria-martyrs.jpg -framerate 30 -loop 1 -t 3 -i assets/algeria-dunes.jpg -filter_complex "[0:v]scale=2560:1440:force_original_aspect_ratio=increase,crop=2560:1440,zoompan=z='1+0.08*on/90':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s=1280x720:fps=30[p1];[1:v]scale=2560:1440:force_original_aspect_ratio=increase,crop=2560:1440,zoompan=z='1+0.08*on/90':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s=1280x720:fps=30[p2];[p1][p2]xfade=transition=fade:duration=1:offset=2" -c:v libx264 -preset medium -crf 20 -pix_fmt yuv420p -r 30 seg_photo.mp4
 
       - name: Download Arabic voice (Piper kareem)
         run: |

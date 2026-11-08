@@ -52,7 +52,7 @@ jobs:
 
       - name: Photo segment (Ken Burns + blur fill)
         run: |
-          ffmpeg -y -v error -framerate 30 -loop 1 -t 5 -i assets/algeria-fort.jpg -framerate 30 -loop 1 -t 5 -i assets/algeria-fort.jpg -filter_complex "[0:v]scale=1280:720:force_original_aspect_ratio=increase,crop=1280:720,gblur=sigma=25,eq=brightness=-0.2[bg];[1:v]scale=1000:854,zoompan=z='1+0.1*on/150':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s=845:720:fps=30[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2,format=yuv420p" -c:v libx264 -preset medium -crf 20 -pix_fmt yuv420p -r 30 seg_photo.mp4
+          ffmpeg -y -v error -framerate 30 -loop 1 -t 5 -i assets/algeria-fort.jpg -framerate 30 -loop 1 -t 5 -i assets/algeria-fort.jpg -filter_complex "[0:v]scale=1280:720:force_original_aspect_ratio=increase,crop=1280:720,gblur=sigma=25,eq=brightness=-0.2[bg];[1:v]scale=1000:854,zoompan=z='1+0.1*on/150':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s=845x720:fps=30[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2,format=yuv420p" -c:v libx264 -preset medium -crf 20 -pix_fmt yuv420p -r 30 seg_photo.mp4
 
       - name: Download Arabic voice (Piper kareem)
         run: |
