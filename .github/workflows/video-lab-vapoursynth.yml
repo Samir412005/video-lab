@@ -29,7 +29,8 @@ jobs:
         run: |
           mkdir -p out
           ffmpeg -y -v error -f lavfi -i "sine=frequency=440:duration=4" -c:a pcm_s16le tone.wav
-          vspipe --y4m scripts/vs_test.vpy - | ffmpeg -y -i - -i tone.wav -c:v libx264 -preset medium -crf 20 -pix_fmt yuv420p -c:a aac -b:a 128k -shortest -movflags +faststart out/video-lab-vapoursynth.mp4
+          vspipe -c y4m scripts/vs_test.vpy out.y4m
+          ffmpeg -y -i out.y4m -i tone.wav -c:v libx264 -preset medium -crf 20 -pix_fmt yuv420p -c:a aac -b:a 128k -shortest -movflags +faststart out/video-lab-vapoursynth.mp4
 
       - name: Upload results
         uses: actions/upload-artifact@v4
