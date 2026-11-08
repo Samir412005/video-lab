@@ -38,6 +38,9 @@ jobs:
         run: |
           mkdir -p render
           blender -b --python scripts/blender_algeria10.py
+          # Blender --python exits 0 even when the script crashes, so a
+          # silent 0-frame render must fail loudly here, not at the next step.
+          test "$(ls render/*.png 2>/dev/null | wc -l)" -eq 90
 
       - name: Assemble Blender opener
         run: |
