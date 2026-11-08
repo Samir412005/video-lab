@@ -57,6 +57,7 @@ GPU مجاني (Google Colab / Kaggle) أو تعمل محلياً.
 | **Piper TTS (kareem)** | تعليق صوتي عربي طبيعي — يعمل محلياً وعلى Actions | GitHub Actions | ✅ مستعمل في أفلام «الجزائر» و«الوقت» |
 | **FFmpeg** | تجميع، تدرج لوني (LUT)، قص على الإيقاع، J/L cuts، ترجمة محروقة | GitHub Actions | ✅ مستعمل في كل الإنتاج |
 | **VapourSynth** | فلاتر فيديو برمجية (حدة، مستويات) | GitHub Actions | ✅ مجرّب — اختبار #2 ناجح (فيديو 720p/24fps موثّق) |
+| **SadTalker (Docker)** | وجه متكلم واقعي من صورة + صوت — في بيئة بايثون 3.10 مثبّتة داخل Docker | GitHub Actions | 📋 جاهز للاختبار — `docker/sadtalker/Dockerfile` + سير عمل `video-lab-sadtalker.yml` (الحل الجذري لفشل Colab: numpy/basicsr) |
 | **Natron** | تركيب VFX بنظام العقد (بديل Nuke المجاني) | محلي / Actions لاحقاً | 📋 موثّقة — لاحقاً |
 | **Remotion** | فيديو برمجي بـ React/TypeScript | Actions لاحقاً | 📋 موثّقة — لاحقاً |
 
@@ -83,8 +84,8 @@ GPU مجاني (Google Colab / Kaggle) أو تعمل محلياً.
 | **Chatterbox Multilingual V3** | تعليق صوتي عربي أفضل من Piper — 23 لغة، استنساخ صوت من مقطع قصير | MIT (كود + أوزان) | T4 أو CPU | 📋 موثّقة — ملاحظة: المشروع توقّف أغسطس 2026 (أرشيف مجمّد) — ثبّت الالتزام 5de7a54؛ الخطوة التالية: اختبار سطر عربي واحد ومقارنته بـ kareem |
 | **Freesound API + Free Music Archive** | أصوات طبيعية وموسيقى حقيقية بدل النغمات الصناعية | حسب الملف — فلتر CC0 فقط | لا GPU؛ Freesound يحتاج مفتاح مجاني؛ FMA التنزيل عبر الموقع (JS) — لم يُتحقق من رابط MP3 مباشر، مفتاح API المجاني هو الطريق الموثوق | ✅ مجرّب جزئياً — معاينات Freesound محظورة من هذا الجهاز (403)؛ ملفا أجواء CC0 حقيقيان في `assets/ambience-desert/` و`assets/ambience-birds/` (عبر Openverse) |
 | **slay LUTs** | 5 تدرجات سينمائية `.cube` — تدرج فيلمي حقيقي بدل فلتر `eq` | CC BY 4.0 (مع ذكر المصدر) | CPU، بلا مفتاح | ✅ مجرّب — الملفات في `assets/luts/`؛ `lut3d=file=assets/luts/slay-04-film.cube` يعمل في FFmpeg (مختبَر على صورة المقام) |
-| **librosa beat-sync** | قص على إيقاع الموسيقى (شرط المونتاج الاحترافي) | (مثبّتة أصلاً) | CPU | 📋 موثّقة — `librosa.beat.beat_track` ← نقاط القص ← تجميع FFmpeg |
-| **rembg** | إزالة خلفية الصور/الفيديو للتركيب | MIT (الكود) — **النموذج الافتراضي BRIA غير تجاري! استعمل `u2net` أو `birefnet-general`** | CPU (ONNX) | 📋 موثّقة — `pip install rembg` ثم `rembg i -m u2net` |
+| **librosa beat-sync** | قص على إيقاع الموسيقى (شرط المونتاج الاحترافي) | (مثبّتة أصلاً) | CPU | ✅ مجرّب — `scripts/beat_cut.py` يعمل (112.3 BPM، 15 نبضة، نقاط قص على النبضات) |
+| **rembg** | إزالة خلفية الصور/الفيديو للتركيب | MIT (الكود) — **النموذج الافتراضي BRIA غير تجاري! استعمل `u2net` أو `birefnet-general`** | CPU (ONNX) | ✅ مجرّب — `scripts/remove_bg.py` يعمل بنموذج u2net (بورتريه 804×1024، 54٪ شفافية) — ملاحظة: يحتاج `rembg[cpu]` (onnxruntime) |
 | **Auto-Editor** | قص الصمت تلقائياً من المقاطع | Unlicense (ملك عام) | CPU | 📋 موثّقة — خطوة في سير العمل قبل التجميع |
 | **FLUX.2 [klein] 4B** | توليد/تحرير صور — ثبات الشخصية عبر 4 صور مرجعية | Apache 2.0 | T4 (~8.4GB) | 📋 موثّقة — دفتر Colab |
 | **HF ZeroGPU + Lightning AI** | GPU مجاني إضافي عند انسداد Colab/Kaggle | مجاني | ZeroGPU: 5 دقائق/يوم؛ Lightning: ~22 ساعة T4/شهر | 📋 موثّقة — جرّب مساحات SadTalker/Wan الجاهزة أولاً |
