@@ -1,0 +1,87 @@
+name: Video Lab Time Film
+
+# Full ~60 s Arabic motion-graphics film «الوقت» built in the cloud:
+# Blender 3D opener + Manim scenes + Piper Arabic voiceover +
+# faster-whisper Arabic subtitles + FFmpeg assembly/grade.
+# Trigger manually from the Actions tab ("Run workflow").
+
+on:
+  workflow_dispatch:
+
+jobs:
+  render:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install system tools
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y ffmpeg blender espeak-ng libcairo2-dev libpango1.0-dev pkg-config fonts-noto-core fontconfig
+
+      - name: Install Python tools
+        run: |
+          pip install --quiet manim faster-whisper piper-tts pillow
+
+      - name: Check Arabic font + shaping
+        run: |
+          fc-list :lang=ar | head -5
+          python3 -c "from PIL import features; print('raqm:', features.check('raqm')); assert features.check('raqm')"
+
+      - name: Render Arabic titles
+        run: python3 scripts/render_titles.py
+
+      - name: Render Blender opener (3D cubes)
+        run: |
+          mkdir -p render
+          blender -b --python scripts/blender_time.py
+
+      - name: Assemble Blender opener
+        run: |
+          ffmpeg -y -v error -framerate 30 -i render/frame_%04d.png -c:v libx264 -preset medium -crf 20 -pix_fmt yuv420p -r 30 seg_blender.mp4
+
+      - name: Render Manim scenes
+        run: |
+          manim render -qm --format=mp4 scripts/manim_time.py TimeClock
+          manim render -qm --format=mp4 scripts/manim_time.py TimeBuild
+          manim render -qm --format=mp4 scripts/manim_time.py TimeGrow
+          manim render -qm --format=mp4 scripts/manim_time.py TimeEnd
+
+      - name: Download Arabic voice (Piper kareem)
+        run: |
+          curl -sSL -o kareem.onnx https://huggingface.co/rhasspy/piper-voices/resolve/main/ar/ar_JO/kareem/medium/ar_JO-kareem-medium.onnx
+          curl -sSL -o kareem.onnx.json https://huggingface.co/rhasspy/piper-voices/resolve/main/ar/ar_JO/kareem/medium/ar_JO-kareem-medium.onnx.json
+          ls -la kareem.onnx*
+
+      - name: Make Arabic voiceover
+        run: python3 scripts/make_vo.py
+
+      - name: Concatenate video segments
+        run: |
+          printf "file 'seg_blender.mp4'\nfile 'media/videos/manim_time/720p30/TimeClock.mp4'\nfile 'media/videos/manim_time/720p30/TimeBuild.mp4'\nfile 'media/videos/manim_time/720p30/TimeGrow.mp4'\nfile 'media/videos/manim_time/720p30/TimeEnd.mp4'\n" > concat.txt
+          ffmpeg -y -v error -f concat -safe 0 -i concat.txt -c:v libx264 -preset medium -crf 20 -pix_fmt yuv420p -r 30 video_novoice.mp4
+          ffprobe -v error -show_entries format=duration -of csv=p=0 video_novoice.mp4
+
+      - name: Mix voiceover + soft pad
+        run: |
+          ffmpeg -y -v error -i vo1.wav -i vo2.wav -i vo3.wav -i vo4.wav -f lavfi -i "sine=frequency=220:duration=60" -f lavfi -i "sine=frequency=330:duration=60" -filter_complex "[0:a]adelay=5000[v1];[1:a]adelay=18000[v2];[2:a]adelay=34000[v3];[3:a]adelay=48000[v4];[4:a]volume=0.03[p1];[5:a]volume=0.02[p2];[v1][v2][v3][v4][p1][p2]amix=inputs=6:duration=longest" -c:a pcm_s16le mixed.wav
+
+      - name: Transcribe to subtitles (faster-whisper, Arabic)
+        run: python3 scripts/transcribe.py mixed.wav subs.srt ar
+
+      - name: Final assembly + grade + burnt-in subtitles
+        run: |
+          mkdir -p out
+          ffmpeg -y -i video_novoice.mp4 -i mixed.wav -vf "eq=contrast=1.05:saturation=1.12,subtitles=subs.srt:force_style='Fontsize=28,PrimaryColour=&HFFFFFF&,OutlineColour=&H000000&'" -c:v libx264 -preset medium -crf 20 -pix_fmt yuv420p -c:a aac -b:a 128k -shortest -movflags +faststart out/time-film.mp4
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        with:
+          name: video-lab-time-film
+          path: |
+            out/time-film.mp4
+            subs.srt
+          if-no-files-found: error
+          retention-days: 30
