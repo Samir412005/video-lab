@@ -27,8 +27,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 # Torch CPU (no CUDA needed for a short test clip; much smaller than CUDA).
+# The PyTorch CPU index does NOT host build tools like flit_core, and pip
+# builds typing_extensions from source (its wheel is discarded over a
+# metadata-name mismatch) — without a PyPI fallback the build dies with
+# "No matching distribution found for flit_core". The extra index fixes it.
 RUN pip install --no-cache-dir torch torchvision torchaudio \
-    --index-url https://download.pytorch.org/whl/cpu
+    --index-url https://download.pytorch.org/whl/cpu \
+    --extra-index-url https://pypi.org/simple
 
 # SadTalker, original pins (they have wheels and build cleanly on 3.10).
 RUN git clone --depth 1 https://github.com/OpenTalker/SadTalker.git /tmp/st \

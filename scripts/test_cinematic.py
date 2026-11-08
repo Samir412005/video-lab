@@ -45,7 +45,12 @@ scene.render.filepath = os.path.join(OUT, "frame_%04d.png")
 scene.render.image_settings.file_format = "PNG"
 
 # --- World: HDRI studio lighting ---------------------------------------
-world = bpy.data.worlds["World"]
+# Blender 5.0's default file ships no "World" data-block, so never assume
+# it exists: reuse it when present, create it otherwise (works on 4.x too).
+world = bpy.data.worlds.get("World")
+if world is None:
+    world = bpy.data.worlds.new("World")
+scene.world = world
 world.use_nodes = True
 env = world.node_tree.nodes.new("ShaderNodeTexEnvironment")
 hdri = os.path.join(os.getcwd(), "assets", "hdri", "studio_small_09_2k.hdr")
