@@ -1,0 +1,67 @@
+name: Capability test — cinematic / particles / smoke / Eevee
+
+# Phase 2 of the studio animation production: measure what the free cloud
+# runner can actually render (Cycles CPU, particles, mantaflow smoke,
+# Eevee real-time) before choosing the production path. Manual trigger.
+on:
+  workflow_dispatch:
+
+jobs:
+  capability:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Blender + FFmpeg
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq blender ffmpeg > /dev/null 2>&1
+          blender --version | head -1
+          ffmpeg -version | head -1
+
+      - name: "Test A — cinematic (Cycles: PBR + HDRI + DOF + motion blur + embers)"
+        run: |
+          START=$(date +%s)
+          blender -b --python scripts/test_cinematic.py
+          END=$(date +%s)
+          echo "CINE RENDER TIME: $((END - START)) s for 48 frames"
+          test "$(ls render_cine/*.png 2>/dev/null | wc -l)" -eq 48
+          ffmpeg -y -v error -framerate 24 -i render_cine/frame_%04d.png \
+            -c:v libx264 -preset medium -crf 20 -pix_fmt yuv420p -r 24 \
+            out/test-cinematic.mp4
+          ffprobe -v error -show_entries format=duration -of csv=p=0 out/test-cinematic.mp4
+
+      - name: Test A2 — same scene, Eevee real-time (may fail headless; non-fatal)
+        continue-on-error: true
+        run: |
+          mkdir -p out
+          START=$(date +%s)
+          RENDER_ENGINE=EEVEE RENDER_OUT=render_eevee blender -b --python scripts/test_cinematic.py
+          END=$(date +%s)
+          echo "EEVEE RENDER TIME: $((END - START)) s for 48 frames"
+          test "$(ls render_eevee/*.png 2>/dev/null | wc -l)" -eq 48
+          ffmpeg -y -v error -framerate 24 -i render_eevee/frame_%04d.png \
+            -c:v libx264 -preset medium -crf 20 -pix_fmt yuv420p -r 24 \
+            out/test-eevee.mp4
+
+      - name: Test B — smoke (mantaflow bake + Cycles render)
+        run: |
+          mkdir -p out
+          START=$(date +%s)
+          blender -b --python scripts/test_smoke.py
+          END=$(date +%s)
+          echo "SMOKE BAKE+RENDER TIME: $((END - START)) s for 48 frames"
+          test "$(ls render_smoke/*.png 2>/dev/null | wc -l)" -eq 48
+          ffmpeg -y -v error -framerate 24 -i render_smoke/frame_%04d.png \
+            -c:v libx264 -preset medium -crf 20 -pix_fmt yuv420p -r 24 \
+            out/test-smoke.mp4
+          ffprobe -v error -show_entries format=duration -of csv=p=0 out/test-smoke.mp4
+
+      - name: Upload test videos
+        uses: actions/upload-artifact@v4
+        with:
+          name: video-lab-capability-test
+          path: out/*.mp4
+          retention-days: 7
