@@ -1,0 +1,198 @@
+#!/usr/bin/env python3
+"""Build colab/SadTalker_Talking_Head.ipynb (adapted from the official
+OpenTalker/SadTalker quick_demo.ipynb, with video-lab demo files).
+
+Run: python3 build_sadtalker_notebook.py  -> writes the .ipynb next to it.
+"""
+import json
+
+REPO_RAW = "https://raw.githubusercontent.com/Samir412005/video-lab/main/assets"
+
+cells = [
+    {
+        "cell_type": "markdown",
+        "metadata": {},
+        "source": [
+            "# SadTalker — Talking Head (صورة + صوت = إنسان واقعي يتكلم)\n",
+            "\n",
+            "صورة بورتريه واحدة + ملف صوتي عربي = فيديو لإنسان واقعي يتكلم، بحركة رأس وملامح وغمزات.\n",
+            "مفتوح المصدر (Apache 2.0) — [SadTalker](https://github.com/OpenTalker/SadTalker) — ويشتغل على **GPU المجاني تاع Google Colab (T4)**.\n",
+            "\n",
+            "**كيف تشغّل:** Runtime → Change runtime type → Hardware accelerator = **T4 GPU** → Save، ثم Runtime → Run all. أول تشغيل ياخذ حوالي 10 دقائق (تثبيت + تحميل الموديلات ~2GB). الفيديو الناتج يظهر في آخر خلية وتقدر تحمّله من مجلد `results/`.\n",
+            "\n",
+            "الملفات التجريبية (بورتريه CC0 + تعليق عربي بصوت Piper/kareem) تُحمَّل تلقائياً من مستودع video-lab؛ أو ارفع ملفاتك الخاصة في خلية الرفع.",
+        ],
+    },
+    {
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "# 1) Check the GPU (must be a T4 or better)\n",
+            "!nvidia-smi --query-gpu=name,memory.total,memory.free --format=csv,noheader\n",
+            "import torch\n",
+            "print('CUDA available:', torch.cuda.is_available())",
+        ],
+    },
+    {
+        "cell_type": "markdown",
+        "metadata": {},
+        "source": [
+            "## 2) Setup (~5 min)\n",
+            "ينسخ SadTalker ويثبّت متطلباته. إذا فشلت هذه الخلية بخطأ NumPy (`VisibleDeprecationWarning`) راجع خلية «Troubleshooting» في الأسفل.",
+        ],
+    },
+    {
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "print('Clone SadTalker and install requirements...')\n",
+            "!git clone -q https://github.com/OpenTalker/SadTalker\n",
+            "%cd SadTalker\n",
+            "!pip install -q -r requirements.txt",
+        ],
+    },
+    {
+        "cell_type": "markdown",
+        "metadata": {},
+        "source": ["## 3) Download the pre-trained models (~2 GB, ~1 min)"],
+    },
+    {
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "print('Download pre-trained models...')\n",
+            "!rm -rf checkpoints\n",
+            "!bash scripts/download_models.sh",
+        ],
+    },
+    {
+        "cell_type": "markdown",
+        "metadata": {},
+        "source": [
+            "## 4) Get the demo portrait + Arabic voiceover\n",
+            "البورتريه CC0 (مجال عام) والتعليق مولّد محلياً بصوت Piper العربي. إذا أردت ملفاتك الخاصة، شغّل خلية الرفع التالية بدل هذه.",
+        ],
+    },
+    {
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "import urllib.request, os\n",
+            "from PIL import Image\n",
+            "from IPython.display import Audio, display\n",
+            "\n",
+            "PORTRAIT = 'portrait.jpg'\n",
+            "AUDIO = 'vo_test.wav'\n",
+            "try:\n",
+            "    urllib.request.urlretrieve('" + REPO_RAW + "/portrait.jpg', PORTRAIT)\n",
+            "    urllib.request.urlretrieve('" + REPO_RAW + "/vo_test.wav', AUDIO)\n",
+            "    print('Downloaded demo files:', os.path.getsize(PORTRAIT), 'bytes image,',\n",
+            "          os.path.getsize(AUDIO), 'bytes audio')\n",
+            "    display(Image.open(PORTRAIT))\n",
+            "    display(Audio(AUDIO))\n",
+            "except Exception as e:\n",
+            "    print('Demo download failed:', e)\n",
+            "    print('Upload your own portrait + audio in the next cell instead.')",
+        ],
+    },
+    {
+        "cell_type": "markdown",
+        "metadata": {},
+        "source": [
+            "## 4b) (Optional) Upload your own portrait + audio\n",
+            "ارفع صورة بورتريه (وجه أمامي، إضاءة جيدة) وملف صوت WAV/MP3، ثم شغّل الخلية.",
+        ],
+    },
+    {
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "from google.colab import files\n",
+            "uploaded = files.upload()\n",
+            "for name in uploaded:\n",
+            "    if name.lower().endswith(('.jpg', '.jpeg', '.png', '.webp')):\n",
+            "        PORTRAIT = name\n",
+            "    elif name.lower().endswith(('.wav', '.mp3', '.m4a')):\n",
+            "        AUDIO = name\n",
+            "print('Portrait:', PORTRAIT)\n",
+            "print('Audio:', AUDIO)",
+        ],
+    },
+    {
+        "cell_type": "markdown",
+        "metadata": {},
+        "source": [
+            "## 5) Generate the talking head\n",
+            "`--still` = حركة رأس ثابتة نسبياً (أنسب للتعليق)، `--preprocess full` = قص الوجه تلقائياً، `--enhancer gfpgan` = تحسين الوجه، `--size 512` = جودة أعلى.",
+        ],
+    },
+    {
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "!python inference.py --driven_audio {AUDIO} --source_image {PORTRAIT} "
+            "--result_dir ./results --still --preprocess full --enhancer gfpgan --size 512",
+        ],
+    },
+    {
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "# 6) Show the result\n",
+            "import glob\n",
+            "from IPython.display import Video, display\n",
+            "mp4s = sorted(glob.glob('./results/*.mp4'))\n",
+            "print('Results:', mp4s)\n",
+            "if mp4s:\n",
+            "    display(Video(mp4s[-1], width=512))",
+        ],
+    },
+    {
+        "cell_type": "markdown",
+        "metadata": {},
+        "source": [
+            "## Troubleshooting\n",
+            "\n",
+            "- **No GPU / CUDA not available:** Runtime → Change runtime type → Hardware accelerator = **T4 GPU** → Save، ثم أعد التشغيل.\n",
+            "- **`AttributeError: module 'numpy' has no attribute 'VisibleDeprecationWarning'`:** إصدار NumPy الحديث لا يناسب SadTalker. الحل المجرّب: بيئة Conda ببايثون 3.8:\n",
+            "  ```\n",
+            "  !wget -q https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O /tmp/miniconda.sh\n",
+            "  !bash /tmp/miniconda.sh -b -p /opt/conda\n",
+            "  !/opt/conda/bin/conda create -y -n sadtalker python=3.8\n",
+            "  !/opt/conda/bin/conda run -n sadtalker pip install -q torch==1.12.1+cu113 torchvision==0.13.1+cu113 --extra-index-url https://download.pytorch.org/whl/cu113\n",
+            "  ```\n",
+            "  ثم نفّذ خلايا التثبيت والتوليد ببادئة `/opt/conda/bin/conda run -n sadtalker`.\n",
+            "- **GFPGAN بطيء أو فشل:** احذف `--enhancer gfpgan` من أمر التوليد.\n",
+            "- **الصوت طويل:** SadTalker يعمل بشكل أفضل على مقاطع 5–30 ثانية؛ قسّم التعليق الطويل إلى مقاطع.",
+        ],
+    },
+]
+
+nb = {
+    "cells": cells,
+    "metadata": {
+        "kernelspec": {"display_name": "Python 3", "language": "python", "name": "python3"},
+        "language_info": {"name": "python", "version": "3.10.0"},
+    },
+    "nbformat": 4,
+    "nbformat_minor": 0,
+}
+
+out = "SadTalker_Talking_Head.ipynb"
+with open(out, "w", encoding="utf-8") as f:
+    json.dump(nb, f, ensure_ascii=False, indent=1)
+print(f"Wrote {out} with {len(cells)} cells")
