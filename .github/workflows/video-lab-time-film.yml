@@ -68,13 +68,13 @@ jobs:
         run: |
           ffmpeg -y -v error -i vo1.wav -i vo2.wav -i vo3.wav -i vo4.wav -f lavfi -i "sine=frequency=220:duration=60" -f lavfi -i "sine=frequency=330:duration=60" -filter_complex "[0:a]adelay=5000[v1];[1:a]adelay=18000[v2];[2:a]adelay=34000[v3];[3:a]adelay=48000[v4];[4:a]volume=0.03[p1];[5:a]volume=0.02[p2];[v1][v2][v3][v4][p1][p2]amix=inputs=6:duration=longest" -c:a pcm_s16le mixed.wav
 
-      - name: Transcribe to subtitles (faster-whisper, Arabic)
-        run: python3 scripts/transcribe.py mixed.wav subs.srt ar
+      - name: Use corrected subtitles (Whisper misheard the Arabic VO)
+        run: cp scripts/subs_time_correct.srt subs.srt
 
       - name: Final assembly + grade + burnt-in subtitles
         run: |
           mkdir -p out
-          ffmpeg -y -i video_novoice.mp4 -i mixed.wav -vf "eq=contrast=1.05:saturation=1.12,subtitles=subs.srt:force_style='Fontsize=28,PrimaryColour=&HFFFFFF&,OutlineColour=&H000000&'" -c:v libx264 -preset medium -crf 20 -pix_fmt yuv420p -c:a aac -b:a 128k -shortest -movflags +faststart out/time-film.mp4
+          ffmpeg -y -i video_novoice.mp4 -i mixed.wav -vf "eq=contrast=1.05:saturation=1.12,subtitles=subs.srt:force_style='Fontsize=28,PrimaryColour=&HFFFFFF&,OutlineColour=&H000000&'" -af "loudnorm=I=-16:TP=-1.5:LRA=11:linear=true,aresample=48000" -ac 2 -c:v libx264 -preset medium -crf 20 -pix_fmt yuv420p -c:a aac -b:a 128k -shortest -movflags +faststart out/time-film.mp4
 
       - name: Upload results
         uses: actions/upload-artifact@v4
