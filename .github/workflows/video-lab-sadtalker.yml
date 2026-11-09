@@ -59,6 +59,10 @@ jobs:
 
       - name: Verify output
         run: |
+          # ffprobe is NOT preinstalled on the runner host (run #4 died
+          # here with exit 127 even though the MP4 existed) — install it.
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg > /dev/null 2>&1
+          ls -lh out/
           MP4=$(ls out/*.mp4 | head -1)
           echo "MP4: $MP4"
           ffprobe -v error -show_entries format=duration,size \
