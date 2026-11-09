@@ -45,12 +45,14 @@ jobs:
           if [ "${{ inputs.enhancer }}" != "none" ]; then
             ENHANCER="--enhancer ${{ inputs.enhancer }}"
           fi
+          # The image ENTRYPOINT is already ["python", "inference.py"],
+          # so do NOT pass inference.py here — it would be treated as an
+          # unknown positional argument. --cpu forces CPU (no GPU on runner).
           docker run --rm -v "$PWD:/work" -w /app sadtalker:test \
-            inference.py \
             --driven_audio "/work/${{ inputs.audio }}" \
             --source_image "/work/${{ inputs.portrait }}" \
             --result_dir /work/out \
-            --still --preprocess full $ENHANCER --size 512
+            --still --preprocess full $ENHANCER --size 512 --cpu
           echo "=== results ==="
           ls -la out/
           test -n "$(ls out/*.mp4 2>/dev/null)" || (echo "ERROR: no MP4 produced" && exit 1)
