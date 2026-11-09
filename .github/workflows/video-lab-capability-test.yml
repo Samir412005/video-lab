@@ -23,6 +23,9 @@ jobs:
 
       - name: "Test A — cinematic (Cycles: PBR + HDRI + DOF + motion blur + embers)"
         run: |
+          mkdir -p out  # ffmpeg needs out/ to exist (run #3 died here: the
+                        # render finished fine but ffmpeg could not create
+                        # out/test-cinematic.mp4 without the directory)
           START=$(date +%s)
           blender -b --python scripts/test_cinematic.py
           END=$(date +%s)
