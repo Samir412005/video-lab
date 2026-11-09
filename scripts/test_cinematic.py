@@ -39,7 +39,12 @@ if engine == "CYCLES":
     scene.cycles.max_bounces = 6
 else:  # EEVEE (real-time; needs a GL context — may fail headless)
     scene.eevee.taa_render_samples = 64
-    scene.eevee.use_motion_blur = True
+    # Blender 5.0 removed SceneEEVEE.use_motion_blur (run #5:
+    # AttributeError at this line, 0 frames rendered) — guard it.
+    # Motion blur is also set on the render itself below, and the
+    # attribute still exists on the 4.2 LTS production build.
+    if hasattr(scene.eevee, "use_motion_blur"):
+        scene.eevee.use_motion_blur = True
 scene.render.resolution_x = 1280
 scene.render.resolution_y = 720
 scene.render.resolution_percentage = 100

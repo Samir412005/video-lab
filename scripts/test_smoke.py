@@ -72,7 +72,8 @@ d.cache_frame_end = 48
 vol_mat = bpy.data.materials.new("SmokeVolume")
 vol_mat.use_nodes = True
 vol = vol_mat.node_tree.nodes.new("ShaderNodeVolumePrincipled")
-vol.inputs["Density"].default_value = 1.0
+vol.inputs["Density"].default_value = 2.0
+vol.inputs["Density Attribute"].default_value = "density"
 vol.inputs["Color"].default_value = (0.7, 0.7, 0.75, 1.0)
 out = vol_mat.node_tree.nodes["Material Output"]
 vol_mat.node_tree.links.new(vol.outputs["Volume"], out.inputs["Volume"])
@@ -87,14 +88,14 @@ mod2.fluid_type = "FLOW"
 f = mod2.flow_settings
 f.flow_type = "SMOKE"
 f.flow_behavior = "INFLOW"
-f.density = 1.0
+f.density = 2.0
 f.use_initial_velocity = True
 f.velocity_factor = 1.5
 
 # --- Light + camera ---------------------------------------------------------
 bpy.ops.object.light_add(type="AREA", location=(3, -3, 5))
 light = bpy.context.active_object
-light.data.energy = 600
+light.data.energy = 1200
 light.data.shape = "DISK"
 light.data.size = 3.0
 light.data.color = (1.0, 0.9, 0.7)
@@ -116,6 +117,14 @@ bpy.context.view_layer.objects.active = domain
 domain.select_set(True)
 bpy.ops.fluid.bake_all()
 print("SMOKE BAKE DONE")
+# Diagnostic (run #5 rendered 48 frames but the plume was invisible):
+# list the bake cache — big files mean the bake produced smoke and the
+# problem is rendering/material; tiny/empty files mean the bake itself
+# produced nothing and the flow/bake setup is at fault.
+for _root, _dirs, _files in os.walk(CACHE):
+    for _fn in sorted(_files):
+        _p = os.path.join(_root, _fn)
+        print("CACHE:", _fn, os.path.getsize(_p), "bytes")
 print("Rendering 48 frames (smoke test) ...")
 bpy.ops.render.render(animation=True)
 print("SMOKE DONE")
