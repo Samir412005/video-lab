@@ -109,6 +109,11 @@ track.track_axis = "TRACK_NEGATIVE_Z"
 track.up_axis = "UP_Y"
 
 print("Baking smoke (48 frames, resolution 32) ...")
+# bake_all() looks at the ACTIVE object — after the camera was created
+# the domain is no longer active, so bake fails with "no Fluid modifier
+# found" (run #4). Make the domain active first.
+bpy.context.view_layer.objects.active = domain
+domain.select_set(True)
 bpy.ops.fluid.bake_all()
 print("SMOKE BAKE DONE")
 print("Rendering 48 frames (smoke test) ...")
