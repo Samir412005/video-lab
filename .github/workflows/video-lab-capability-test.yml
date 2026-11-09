@@ -17,7 +17,9 @@ jobs:
       - name: Install Blender + FFmpeg
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq blender ffmpeg > /dev/null 2>&1
+          # libegl1/libgl1/libgles2: Eevee headless needs libEGL — run #6
+          # crashed at Eevee init ("Couldn't open libEGL.so.1", exit 134)
+          sudo apt-get install -y -qq blender ffmpeg libegl1 libgl1 libgles2 > /dev/null 2>&1
           blender --version | head -1
           ffmpeg -version | head -1
 

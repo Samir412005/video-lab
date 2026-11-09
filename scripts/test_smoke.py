@@ -68,6 +68,12 @@ d.use_noise = False
 d.cache_directory = CACHE
 d.cache_frame_start = 1
 d.cache_frame_end = 48
+# Explicit cache type: initializes the point cache. Run #6 root cause:
+# the bake wrote only fluid_data_0001.vdb (55 KB) and stopped after
+# frame 1 — "Error in point cache relation from OBSmokeFlow to
+# ^OBSmokeDomain", so the flow never linked to the domain and no smoke
+# was simulated past frame 1.
+d.cache_type = "MODULAR"
 # Volume material so the smoke is visible in Cycles.
 vol_mat = bpy.data.materials.new("SmokeVolume")
 vol_mat.use_nodes = True
@@ -115,6 +121,10 @@ print("Baking smoke (48 frames, resolution 32) ...")
 # found" (run #4). Make the domain active first.
 bpy.context.view_layer.objects.active = domain
 domain.select_set(True)
+# Force the dependency graph to build the flow -> domain relation before
+# baking (run #6: the point-cache relation was broken, so the bake
+# stopped after frame 1).
+bpy.context.view_layer.update()
 bpy.ops.fluid.bake_all()
 print("SMOKE BAKE DONE")
 # Diagnostic (run #5 rendered 48 frames but the plume was invisible):
