@@ -7,7 +7,10 @@ with a Principled Volume material. If the bake or the render is too slow,
 the production film uses particles/atmosphere instead of real smoke.
 
 Run headless:  blender -b --python scripts/test_smoke.py
-Output: render_smoke/frame_%04d.png (48 frames, 1280x720, 24 fps)
+Output: render_smoke/frame_0001.png ... frame_0048.png (48 frames,
+1280x720, 24 fps). NOTE: use Blender's "####" placeholder in the
+filepath — Blender does NOT interpret "%04d", it appends the frame
+number to the filename, which broke the ffmpeg step in run #2.
 """
 import bpy
 import os
@@ -29,11 +32,16 @@ scene.render.resolution_y = 720
 scene.render.fps = 24
 scene.frame_start = 1
 scene.frame_end = 48
-scene.render.filepath = os.path.join(OUT, "frame_%04d.png")
+scene.render.filepath = os.path.join(OUT, "frame_####.png")
 scene.render.image_settings.file_format = "PNG"
 
 # World: dim, so the smoke reads.
-world = bpy.data.worlds["World"]
+# Blender 5.0's default file ships no "World" data-block — get-or-create
+# (same fix as test_cinematic.py run #2; direct ["World"] KeyErrors).
+world = bpy.data.worlds.get("World")
+if world is None:
+    world = bpy.data.worlds.new("World")
+scene.world = world
 world.use_nodes = True
 bg = world.node_tree.nodes["Background"]
 bg.inputs["Color"].default_value = (0.02, 0.02, 0.03, 1.0)
