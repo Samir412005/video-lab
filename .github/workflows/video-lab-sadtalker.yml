@@ -23,7 +23,9 @@ on:
 jobs:
   sadtalker:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 300  # CPU inference alone takes ~2h (build ~5m +
+                          # generation ~1h55m); 120 min cut run #5 off at 78%
+                          # of the Face Enhancer phase — never again.
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -70,6 +72,7 @@ jobs:
             -of default=noprint_wrappers=1 "$MP4"
 
       - name: Upload talking-head video
+        if: always()  # never lose a finished video because Verify failed
         uses: actions/upload-artifact@v4
         with:
           name: video-lab-sadtalker
