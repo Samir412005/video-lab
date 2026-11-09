@@ -7,7 +7,10 @@ depth of field, motion blur, and glowing ember particles.
 No denoising (apt Blender 4.0.2 has no OpenImageDenoiser).
 
 Run headless:  blender -b --python scripts/test_cinematic.py
-Output: render_cine/frame_%04d.png (48 frames, 1280x720, 24 fps)
+Output: render_cine/frame_0001.png ... frame_0048.png (48 frames,
+1280x720, 24 fps). NOTE: use Blender's "####" placeholder in the
+filepath — Blender does NOT interpret "%04d", it appends the frame
+number to the filename, which broke the ffmpeg step in run #2.
 """
 import bpy
 import math
@@ -41,7 +44,7 @@ scene.frame_start = 1
 scene.frame_end = 48
 scene.render.use_motion_blur = True
 scene.render.motion_blur_shutter = 0.5
-scene.render.filepath = os.path.join(OUT, "frame_%04d.png")
+scene.render.filepath = os.path.join(OUT, "frame_####.png")
 scene.render.image_settings.file_format = "PNG"
 
 # --- World: HDRI studio lighting ---------------------------------------
