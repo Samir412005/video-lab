@@ -25,7 +25,11 @@ bpy.ops.wm.read_factory_settings(use_empty=True)
 # --- Render settings ---------------------------------------------------
 # Engine selectable via RENDER_ENGINE env var (CYCLES default; EEVEE for
 # the real-time comparison test). Both run headless on the Actions runner.
+# Blender 5.0 renamed the Eevee enum to BLENDER_EEVEE ("EEVEE" raises
+# TypeError: enum not found) — map it here.
 engine = os.environ.get("RENDER_ENGINE", "CYCLES")
+if engine == "EEVEE":
+    engine = "BLENDER_EEVEE"
 scene = bpy.context.scene
 scene.render.engine = engine
 if engine == "CYCLES":
