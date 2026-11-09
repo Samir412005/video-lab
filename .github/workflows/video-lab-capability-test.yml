@@ -63,6 +63,8 @@ jobs:
           ffprobe -v error -show_entries format=duration -of csv=p=0 out/test-smoke.mp4
 
       - name: Upload test videos
+        if: always()  # never lose a passing test's video because a later
+                      # test failed (run #4 lost Test A's video this way)
         uses: actions/upload-artifact@v4
         with:
           name: video-lab-capability-test
